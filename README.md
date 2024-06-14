@@ -12,9 +12,9 @@ See [FF repo](https://github.com/jesper-olsen/ff-py) for another result on the s
 
 References:
 -----------
-[1] [Deep Boltzmann Machines](https://proceedings.mlr.press/v5/salakhutdinov09a.html)
-[2] [Matlab code](https://www.cs.toronto.edu/~hinton/MatlabForSciencePaper.html)
-[3] [LeCun's raw MNIST db](http://yann.lecun.com/exdb/mnist/)
+[1] [Deep Boltzmann Machines](https://proceedings.mlr.press/v5/salakhutdinov09a.html) <br/>
+[2] [Matlab code](https://www.cs.toronto.edu/~hinton/MatlabForSciencePaper.html) <br/>
+[3] [LeCun's raw MNIST db](http://yann.lecun.com/exdb/mnist/) <br/>
 
 Run:
 ----
