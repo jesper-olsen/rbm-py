@@ -68,6 +68,7 @@ ep  7/10 error 458412.6
 ep  8/10 error 420705.0
 ep  9/10 error 403323.1
 ep 10/10 error 391466.5
+Model size - #weights:  1665010
 
 Training discriminative model on MNIST by minimizing cross entropy error.
 ep   1/100 misclassified 44900/50000 (train)  8990/10000 (test)
@@ -171,7 +172,7 @@ ep  98/100 misclassified     0/50000 (train)   147/10000 (test)
 ep  99/100 misclassified     0/50000 (train)   145/10000 (test)
 ep 100/100 misclassified     0/50000 (train)   145/10000 (test)
 epoch 101/100 batch  50/50
-real	57m44.735s
-user	46m55.596s
-sys	9m8.788s
+real	57m52.807s
+user	47m2.694s
+sys	9m33.379s
 ```
