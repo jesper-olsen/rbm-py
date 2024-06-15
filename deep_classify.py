@@ -27,6 +27,7 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
     hidbiasinc = np.zeros((1, numhid))
     visbiasinc = np.zeros((1, idim))
     batchposhidprobs = np.zeros((numcases, numhid, numbatches))
+    negdata = np.zeros((numcases,idim))
 
     for epoch in range(maxepoch):
         nerrors = 0
@@ -50,7 +51,8 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
                 poshidstates = poshidprobs + np.random.randn(numcases, numhid)
 
             # Start negative phase
-            negdata = logistic(poshidstates @ vishid.T+visbiases)
+            #negdata = logistic(poshidstates @ vishid.T+visbiases)
+            logistic(poshidstates @ vishid.T+visbiases, out=negdata)
             np.dot(negdata, vishid, out=neghidprobs) #in place
             neghidprobs+=hidbiases
             if binary:
@@ -82,12 +84,11 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
 def cg_toplevel(VV, l, w3probs, target):
     N = w3probs.shape[0]
 
-    # Deconversion.
     w_class = VV.reshape((l[0] + 1, l[1]))
     w3probs = np.hstack([w3probs, np.ones((N, 1))])
 
     targetout = np.exp(w3probs @ w_class)
-    targetout = targetout / np.sum(targetout, axis=1, keepdims=True)
+    targetout /= np.sum(targetout, axis=1, keepdims=True)
     
     f = -np.sum(target * np.log(targetout))
     Ix = targetout - target
@@ -98,7 +99,6 @@ def cg_toplevel(VV, l, w3probs, target):
 def cg(VV, l, XX, target):
     N = XX.shape[0]
 
-    # Deconversion
     w = [None]*4
     z=0
     for i in range(4):
@@ -113,11 +113,11 @@ def cg(VV, l, XX, target):
         wprobsIM1 = wprobs[i]
 
     targetout = np.exp(wprobs[2] @ w[3])
-    targetout = targetout / np.sum(targetout, axis=1, keepdims=True)
+    targetout /= np.sum(targetout, axis=1, keepdims=True)
     f = -np.sum(target * np.log(targetout))
 
-    Ix = targetout - target
     dw = [None] * 4
+    Ix = targetout - target
     dw[3] = wprobs[2].T @ Ix
 
     Ix = (Ix @ w[3].T) * wprobs[2] * (1 - wprobs[2])
@@ -159,7 +159,7 @@ def calc_error(batchdata, batchtargets, w):
     #crerr = err_cr / numbatches
     return err, N*numbatches
 
-def backprop_classify(mnist_data, w):
+def backprop(mnist_data, w):
     maxepoch = 100
     print('\nTraining discriminative model on MNIST by minimizing cross entropy error.')
 
@@ -225,7 +225,7 @@ def deep_classify():
     w+=[0.1 * np.random.randn(w[-1].shape[1] + 1, 10)]
     print("Model size - #weights: ", sum([a.size for a in w]))
     mnist_data=mnist.make_batches("MNIST", batch_size=1000)  # different batch_size
-    backprop_classify(mnist_data, w) 
+    backprop(mnist_data, w) 
 
 if __name__=="__main__":
     deep_classify()
