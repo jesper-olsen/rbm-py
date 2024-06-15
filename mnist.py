@@ -25,7 +25,7 @@ def label2target(labels):
     numlab=10
     return np.eye(numlab)[labels] 
 
-def make_batches(path):
+def make_batches(path, batch_size=100):
     #use Hinton's pre-processed matlab archive - note sequences have been re-ordered relative to MNIST
     #return scipy.io.loadmat(path+"/mnistdata.mat")
 
@@ -42,7 +42,7 @@ def make_batches(path):
     finaltestbatchtargets=label2target( read_labels(path+"/raw/t10k-labels-idx1-ubyte") )
 
     def reshape(a, n):
-        a = a.reshape(-1, 100, n)
+        a = a.reshape(-1, batch_size, n)
         a = a.transpose(1,2,0)
         return a
 
@@ -53,7 +53,10 @@ def make_batches(path):
              "testbatchdata": reshape(finaltestbatchdata,npix),
              "batchtargets": reshape(batchtargets, numlab),
              "validbatchtargets": reshape(validbatchtargets, numlab),
-             "testbatchtargets": reshape(finaltestbatchtargets,numlab)}
+             "testbatchtargets": reshape(finaltestbatchtargets,numlab),
+             "npix": npix,
+             "nlab": numlab 
+           }
 
 def show_image(image, label, index):
     plt.figure()

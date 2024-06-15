@@ -34,11 +34,11 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
 
             # Start positive phase
             data = batchdata[:, :, batch]
-            poshidprobs = data @ vishid + hidbiases
+            np.dot(data, vishid, out=poshidprobs) #in place
+            poshidprobs+=hidbiases
             if binary:
-                poshidprobs = logistic(poshidprobs)
+                logistic(poshidprobs, out=poshidprobs)
             batchposhidprobs[:, :, batch] = poshidprobs
-            #posprods = data.T @ poshidprobs
             np.dot(data.T, poshidprobs, out=posprods) #in place
             poshidact = np.sum(poshidprobs, axis=0)
             posvisact = np.sum(data, axis=0)
@@ -51,11 +51,12 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
 
             # Start negative phase
             negdata = logistic(poshidstates @ vishid.T+visbiases)
-            neghidprobs = negdata @ vishid + hidbiases
+            np.dot(negdata, vishid, out=neghidprobs) #in place
+            neghidprobs+=hidbiases
             if binary:
-                neghidprobs = logistic(neghidprobs)
+                logistic(neghidprobs, out=neghidprobs)
 
-            negprods = negdata.T @ neghidprobs
+            np.dot(negdata.T, neghidprobs, out=negprods) #in place
             neghidact = np.sum(neghidprobs, axis=0)
             negvisact = np.sum(negdata, axis=0)
             # End negative phase
@@ -64,9 +65,17 @@ def train_rbm(batchdata, maxepoch, numhid, binary=True):
             momentum = finalmomentum if epoch >= 5 else initialmomentum
 
             # Update weights and biases
-            vishid += momentum*vishidinc + epsilonw*((posprods-negprods)/numcases-weightcost*vishid)
-            visbiases += momentum*visbiasinc + (epsilonvb/numcases) * (posvisact-negvisact)
-            hidbiases += momentum*hidbiasinc + (epsilonhb/numcases) * (poshidact-neghidact)
+            vishidinc *= momentum 
+            vishidinc += epsilonw*((posprods-negprods)/numcases-weightcost*vishid)
+            vishid += vishidinc
+
+            visbiasinc *= momentum
+            visbiasinc += (epsilonvb/numcases) * (posvisact-negvisact)
+            visbiases += visbiasinc
+
+            hidbiasinc *= momentum 
+            hidbiasinc += (epsilonhb/numcases) * (poshidact-neghidact)
+            hidbiases += hidbiasinc
         print(f'ep {epoch+1:2}/{maxepoch} error {nerrors:.1f}')
     return (batchposhidprobs, vishid, hidbiases, visbiases)
 
@@ -139,7 +148,7 @@ def calc_error(batchdata, batchtargets, w):
             wprobs[i] = np.concatenate((wprobs[i], np.ones((N, 1))), axis=1)
             wprobsIM1=wprobs[i]
         targetout = np.exp(wprobs[-1] @ w[-1])
-        targetout = targetout / np.sum(targetout, axis=1, keepdims=True)
+        targetout /= np.sum(targetout, axis=1, keepdims=True)
 
         J = np.argmax(targetout, axis=1)
         J1 = np.argmax(target, axis=1)
@@ -165,16 +174,11 @@ def backprop_classify(mnist_data, w):
         # Combine 10 minibatches into 1 larger minibatch
         batchdata, batchtargets=mnist_data['batchdata'], mnist_data['batchtargets']
         N, numdims, numbatches = batchdata.shape
-        tt = 0
-        for batch in range(numbatches//10): # 50 batches of 1000 cases each.
-            print(f'epoch {epoch:3} batch {batch:3}\r', end='')
+        #for batch in range(numbatches//10): # 50 batches of 1000 cases each.
+        for batch in range(numbatches): 
+            print(f'epoch {epoch+1:3}/{maxepoch} batch {batch+1:3}/{numbatches}\r', end='')
 
-            data, targets = [], []
-            for kk in range(10):
-                data.append(batchdata[:, :, tt * 10 + kk])
-                targets.append(batchtargets[:, :, tt * 10 + kk])
-            data, targets = np.vstack(data), np.vstack(targets)
-            tt += 1
+            data,targets = batchdata[:,:,batch], batchtargets[:,:,batch]
 
             max_iter=3
             if epoch < 6:  # First update top-level weights holding other weights fixed.
@@ -205,7 +209,7 @@ def backprop_classify(mnist_data, w):
 def deep_classify():
     np.random.seed(17)
     maxepoch=10
-    mnist_data=mnist.make_batches("MNIST")
+    mnist_data=mnist.make_batches("MNIST", batch_size=100)
     batch_size, idim, numbatches = mnist_data["batchdata"].shape
     print(f"Batchsize: {batch_size} Input-dim: {idim} #training batches: {numbatches}")
 
@@ -219,6 +223,8 @@ def deep_classify():
 
     w=[np.vstack((vh,hb)) for (vh,hb,_) in l] 
     w+=[0.1 * np.random.randn(w[-1].shape[1] + 1, 10)]
+    print("Model size - #weights: ", sum([a.size for a in w]))
+    mnist_data=mnist.make_batches("MNIST", batch_size=1000)  # different batch_size
     backprop_classify(mnist_data, w) 
 
 if __name__=="__main__":
