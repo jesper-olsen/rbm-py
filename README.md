@@ -6,7 +6,7 @@ Deep Boltzmann Machines [1,2] evaluated on the MNIST [3] handwritten digit recog
 Network: 3 stacked Restricted Boltzmann Machines (RBMs): 784-500, 500-500, 500-2000 followed by 10
 softmax outputs for the digits 0-9.
 
-Train on 50k samples, test on 10k; Error rate: 0.0% (train) / 1.52% (test)
+Train on 50k samples, test on 10k; Error rate: 0.0% (train) / 1.45% (test)
 
 See [FF repo](https://github.com/jesper-olsen/ff-py) for another result on the same task.
 
