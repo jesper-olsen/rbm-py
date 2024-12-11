@@ -4,14 +4,9 @@ from scipy.optimize import minimize
 import mnist
 
 def train_rbm(batchdata, maxepoch, numhid, binary=True):
-    if binary:
-        epsilonw, epsilonvb, epsilonhb = 0.1, 0.1, 0.1
-    else:
-        epsilonw, epsilonvb, epsilonhb = 0.001, 0.001, 0.001
-
+    epsilonw, epsilonvb, epsilonhb = (0.1,)*3 if binary else (0.001,)*3
     weightcost = 0.0002
     initialmomentum, finalmomentum = 0.5, 0.9
-
     numcases, idim, numbatches = batchdata.shape
 
     # Initializing symmetric weights and biases
@@ -118,18 +113,11 @@ def cg(VV, l, XX, target):
 
     dw = [None] * 4
     Ix = targetout - target
-    dw[3] = wprobs[2].T @ Ix
 
-    Ix = (Ix @ w[3].T) * wprobs[2] * (1 - wprobs[2])
-    Ix = Ix[:,:-1]     # rm last column of ones 
-    dw[2] = wprobs[1].T @ Ix   
-
-    Ix = (Ix @ w[2].T) * wprobs[1] * (1 - wprobs[1])
-    Ix = Ix[:,:-1]
-    dw[1] = wprobs[0].T @ Ix
-
-    Ix = (Ix @ w[1].T) * wprobs[0] * (1 - wprobs[0])
-    Ix = Ix[:,:-1]
+    for i in range(3,0,-1):
+        dw[i] = wprobs[i-1].T @ Ix
+        Ix = (Ix @ w[i].T) * wprobs[i-1] * (1 - wprobs[i-1])
+        Ix = Ix[:,:-1]     # rm last column of ones 
     dw[0] = XX.T @ Ix
 
     df = np.concatenate([dw[i].ravel() for i in range(4)])
@@ -159,39 +147,29 @@ def calc_error(batchdata, batchtargets, w):
     #crerr = err_cr / numbatches
     return err, N*numbatches
 
-def backprop(mnist_data, w):
-    maxepoch = 100
+def backprop(mnist_data, w, maxepoch=100):
     print('\nTraining discriminative model on MNIST by minimizing cross entropy error.')
-
     l = [x.shape[0]-1 for x in w] + [w[-1].shape[1]]
-
     for epoch in range(1, maxepoch + 1):
         # Compute training misclassification error
         train_err, train_n = calc_error(mnist_data['batchdata'], mnist_data['batchtargets'], w)
         test_err, test_n = calc_error(mnist_data['testbatchdata'], mnist_data['testbatchtargets'], w)
         print(f"ep {epoch:3}/{maxepoch} misclassified {train_err:5}/{train_n} (train) {test_err:5}/{test_n} (test)")
 
-        # Combine 10 minibatches into 1 larger minibatch
         batchdata, batchtargets=mnist_data['batchdata'], mnist_data['batchtargets']
         N, numdims, numbatches = batchdata.shape
-        #for batch in range(numbatches//10): # 50 batches of 1000 cases each.
         for batch in range(numbatches): 
             print(f'epoch {epoch+1:3}/{maxepoch} batch {batch+1:3}/{numbatches}\r', end='')
-
             data,targets = batchdata[:,:,batch], batchtargets[:,:,batch]
-
             max_iter=3
             if epoch < 6:  # First update top-level weights holding other weights fixed.
                 N = data.shape[0]
-                
                 wprobs = data
                 for i in range(3):
                     wprobs = np.hstack([wprobs, np.ones((N, 1))])
                     wprobs = logistic(wprobs @ w[i])
-    
                 VV = w[-1].ravel()
                 Dim = [wprobs.shape[1], w[-1].shape[1]]
-
                 res = minimize(cg_toplevel, VV, args=(Dim, wprobs, targets), method='CG', jac=True, options={'maxiter': max_iter})
                 w[-1]= res.x.reshape((Dim[0] + 1, Dim[1]))
             else:
