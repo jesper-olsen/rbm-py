@@ -33,6 +33,9 @@ Download MNIST:
 
 Train a model:
 ```
+% python --version
+Python 3.13.1
+
 % time python deep_classify.py
 Batchsize: 100 Input-dim: 784 #training batches: 500
 Pretraining Layer 1 with RBM: 784-500
